@@ -78,7 +78,13 @@ export default function DoctorAvailability({ doctor, onNavigate, token }: Doctor
       let authToken = token
       if (!authToken) {
         const urlParams = new URLSearchParams(window.location.search)
-        authToken = urlParams.get("token") || localStorage.getItem("token")
+        authToken = urlParams.get("token") || localStorage.getItem("auth_token")
+      }
+      
+      if (!authToken) {
+        setError("Authentication token not found. Please login again.")
+        setIsBooking(false)
+        return
       }
 
       const headers: Record<string, string> = {

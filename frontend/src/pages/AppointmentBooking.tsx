@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react"
 import AppointmentCard from "../components/AppointmentCard"
 
+const API_BASE_URL = "http://localhost:5000/api"
+
 interface AppointmentBookingProps {
   onNavigate: (page: string) => void
 }
@@ -17,7 +19,17 @@ interface Appointment {
   status: "pending" | "confirmed" | "completed" | "cancelled"
 }
 
-const API_BASE_URL = "http://localhost:5000/api"
+interface MappedAppointment {
+  id: string
+  doctorName: string
+  specialty: string
+  hospital: string
+  date: string
+  time: string
+  status: "confirmed" | "pending" | "completed" | "cancelled"
+  reason: string
+  notes: string
+}
 
 export default function AppointmentBooking({ onNavigate }: AppointmentBookingProps) {
   const [isVisible, setIsVisible] = useState(false)
@@ -37,8 +49,13 @@ export default function AppointmentBooking({ onNavigate }: AppointmentBookingPro
       setIsLoading(true)
       setError(null)
 
-      const token = localStorage.getItem("token")
-      // Removed redundant login check - error handling happens naturally from fetch failure
+      const token = localStorage.getItem("auth_token")
+      
+      if (!token) {
+        setError("Authentication token not found. Please login again.")
+        setIsLoading(false)
+        return
+      }
 
       const response = await fetch(`${API_BASE_URL}/appointments/patient/appointments`, {
         method: "GET",
@@ -66,10 +83,17 @@ export default function AppointmentBooking({ onNavigate }: AppointmentBookingPro
     }
   }
 
-  const handleCancel = async (id: number) => {
+  const handleCancel = async (id: string) => {
     try {
-      const token = localStorage.getItem("token")
-      // Removed redundant login check
+      const token = localStorage.getItem("auth_token")
+      
+      if (!token) {
+        setError("Authentication token not found. Please login again.")
+        return
+      }
+
+      const reason = prompt("Please provide a reason for cancellation:")
+      if (!reason) return
 
       const response = await fetch(`${API_BASE_URL}/appointments/${id}/cancel`, {
         method: "POST",
@@ -77,6 +101,9 @@ export default function AppointmentBooking({ onNavigate }: AppointmentBookingPro
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          reason: reason,
+        }),
       })
 
       if (!response.ok) {
@@ -211,7 +238,7 @@ export default function AppointmentBooking({ onNavigate }: AppointmentBookingPro
             upcomingAppointments.map((appointment, index) => {
               // Map backend format to component format
               const mappedApt = {
-                id: Number.parseInt(appointment.id),
+                id: appointment.id,
                 doctorName: appointment.doctor_id,
                 specialty: "Specialist",
                 hospital: appointment.hospital_id,
@@ -234,7 +261,7 @@ export default function AppointmentBooking({ onNavigate }: AppointmentBookingPro
                   <AppointmentCard
                     appointment={mappedApt}
                     onCancel={() => handleCancel(mappedApt.id)}
-                    onReschedule={() => handleReschedule(mappedApt.id)}
+                    onReschedule={() => handleReschedule(Number.parseInt(mappedApt.id))}
                   />
                 </div>
               )
@@ -271,7 +298,7 @@ export default function AppointmentBooking({ onNavigate }: AppointmentBookingPro
             pastAppointments.map((appointment, index) => {
               // Map backend format to component format
               const mappedApt = {
-                id: Number.parseInt(appointment.id),
+                id: appointment.id,
                 doctorName: appointment.doctor_id,
                 specialty: "Specialist",
                 hospital: appointment.hospital_id,
@@ -335,7 +362,7 @@ export default function AppointmentBooking({ onNavigate }: AppointmentBookingPro
           className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white p-6 rounded-2xl shadow-lg hover:shadow-2xl hover:shadow-blue-200/50 transition-all duration-300 cursor-pointer hover:-translate-y-2 group"
         >
           <div className="text-3xl mb-3 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
-            📄
+           
           </div>
           <h3 className="text-lg font-bold mb-2">Medical History</h3>
           <p className="text-sm opacity-90">View your complete medical records</p>

@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useState, useContext, type ReactNode } from "react"
+import { createContext, useState, useContext, type ReactNode, useEffect } from "react"
 
 export interface Notification {
   id: string
@@ -9,6 +9,7 @@ export interface Notification {
   type: "info" | "warning" | "error" | "success"
   read: boolean
   timestamp: Date
+  appointmentId?: string
 }
 
 interface NotificationContextType {
@@ -17,10 +18,13 @@ interface NotificationContextType {
   addNotification: (notification: Omit<Notification, "id" | "read" | "timestamp">) => void
   markAsRead: (id: string) => void
   markAllAsRead: () => void
-  clearNotifications: () => void
+  clearNotification: (id: string) => Promise<void>
+  clearNotifications: () => Promise<void>
+  fetchAppointmentNotifications: () => Promise<void>
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
+const API_BASE_URL = "http://localhost:5000/api"
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
@@ -43,9 +47,88 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setNotifications((prev) => prev.map((notif) => ({ ...notif, read: true })))
   }
 
-  const clearNotifications = () => {
-    setNotifications([])
+  const clearNotification = async (id: string) => {
+    try {
+      const token = localStorage.getItem("auth_token")
+      if (!token) return
+
+      const response = await fetch(`${API_BASE_URL}/appointments/notifications/${id}/clear`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (response.ok) {
+        setNotifications((prev) => prev.filter((notif) => notif.id !== id))
+      }
+    } catch (err) {
+      console.error("[v0] Error clearing notification:", err)
+    }
   }
+
+  const clearNotifications = async () => {
+    try {
+      const token = localStorage.getItem("auth_token")
+      if (!token) return
+
+      for (const notif of notifications) {
+        await fetch(`${API_BASE_URL}/appointments/notifications/${notif.id}/clear`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        })
+      }
+
+      setNotifications([])
+    } catch (err) {
+      console.error("[v0] Error clearing notifications:", err)
+    }
+  }
+
+  const fetchAppointmentNotifications = async () => {
+    try {
+      const token = localStorage.getItem("auth_token")
+      if (!token) return
+
+      const response = await fetch(`${API_BASE_URL}/appointments/notifications`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (!response.ok) return
+
+      const data = await response.json()
+      const backendNotifications = data.notifications || []
+
+      const newNotifications: Notification[] = backendNotifications.map((notif: any) => ({
+        id: notif.id,
+        title: notif.type === 'success' ? 'Appointment Confirmed' : notif.type === 'warning' ? 'Appointment Cancelled' : 'New Appointment',
+        message: notif.message,
+        type: notif.type,
+        read: notif.read,
+        timestamp: new Date(notif.created_at),
+        appointmentId: notif.appointment_id,
+      }))
+
+      setNotifications(newNotifications)
+    } catch (err) {
+      console.error("[v0] Error fetching notifications:", err)
+    }
+  }
+
+  useEffect(() => {
+    fetchAppointmentNotifications()
+
+    const interval = setInterval(fetchAppointmentNotifications, 3000)
+    return () => clearInterval(interval)
+  }, [])
 
   const unreadCount = notifications.filter((n) => !n.read).length
 
@@ -57,7 +140,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         addNotification,
         markAsRead,
         markAllAsRead,
+        clearNotification,
         clearNotifications,
+        fetchAppointmentNotifications,
       }}
     >
       {children}

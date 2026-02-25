@@ -1,7 +1,7 @@
 "use client"
 
 interface Appointment {
-  id: number
+  id: string
   doctorName: string
   specialty: string
   hospital: string
@@ -14,8 +14,8 @@ interface Appointment {
 
 interface AppointmentCardProps {
   appointment: Appointment
-  onCancel?: (id: number) => void
-  onReschedule?: (id: number) => void
+  onCancel?: (id: string) => void
+  onReschedule?: (id: string) => void
   isPast?: boolean
 }
 

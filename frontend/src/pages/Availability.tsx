@@ -33,14 +33,14 @@ export default function Availability({ onNavigate }: AvailabilityProps) {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const urlToken = urlParams.get("token")
-    const storedToken = localStorage.getItem("token")
+    const storedToken = localStorage.getItem("auth_token")
 
     const finalToken = urlToken || storedToken
     setToken(finalToken)
 
     // Store token in localStorage if it came from URL
     if (urlToken) {
-      localStorage.setItem("token", urlToken)
+      localStorage.setItem("auth_token", urlToken)
     }
 
     setIsVisible(true)
