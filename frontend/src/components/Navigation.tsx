@@ -17,7 +17,8 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
     { id: "availability", label: "Availability", icon: "" },
     { id: "booking", label: "My Appointments", icon: "" },
     { id: "ambulance", label: "Ambulance", icon: "" },
-    { id: "history", label: "Medical History", icon: "" },
+    { id: "prescriptions", label: "Prescriptions", icon: "" },
+    // { id: "history", label: "Medical History", icon: "" },
   ]
 
   return (

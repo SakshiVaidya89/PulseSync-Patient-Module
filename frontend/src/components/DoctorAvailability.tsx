@@ -99,7 +99,7 @@ export default function DoctorAvailability({ doctor, onNavigate, token }: Doctor
         method: "POST",
         headers,
         body: JSON.stringify({
-          doctor_id: String(doctor.id),
+          doctor_id: doctor.name || String(doctor.id),
           hospital_id: doctor.hospital || "1",
           appointment_date: new Date().toISOString().split("T")[0],
           appointment_time: selectedSlot,

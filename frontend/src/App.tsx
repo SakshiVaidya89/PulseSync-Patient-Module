@@ -10,6 +10,7 @@ import MedicalHistory from "./pages/MedicalHistory"
 import AmbulanceBooking from "./pages/AmbulanceBooking"
 import ProfilePage from "./pages/ProfilePage"
 import CompleteProfile from "./pages/CompleteProfile"
+import PrescriptionTracker from "./pages/PrescriptionTracker"
 import ChatbotIcon from "./components/ChatbotIcon"
 import { NotificationProvider } from "./context/NotificationContext"
 import "./App.css"
@@ -86,6 +87,8 @@ export default function Home() {
         return <Availability onNavigate={setCurrentPage} />
       case "booking":
         return <AppointmentBooking onNavigate={setCurrentPage} />
+      case "prescriptions":
+        return <PrescriptionTracker onNavigate={setCurrentPage} />
       case "history":
         return <MedicalHistory onNavigate={setCurrentPage} />
       case "ambulance":
