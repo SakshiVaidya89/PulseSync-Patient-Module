@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pulse - AI Health Assistant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f3f4f6;
+      --text-primary: #111827;
+      --text-secondary: #4b5563;
+      --accent-primary: #3b82f6;
+    }
+
+    html.dark {
+      --bg-primary: #1f2937;
+      --bg-secondary: #374151;
+      --text-primary: #f9fafb;
+      --text-secondary: #d1d5db;
+      --accent-primary: #60a5fa;
+    }
+
+    body {
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    .dot-flashing {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #999;
+      animation: blink 1s infinite alternate;
+    }
+
+    @keyframes blink {
+      from { opacity: 0.3; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+
+<body class="flex items-center justify-center h-screen">
+
+  <div id="chat-container"
+       class="w-full max-w-2xl h-[95vh] flex flex-col bg-white rounded-2xl shadow-2xl">
+
+    <!-- Header -->
+    <div class="p-4 border-b flex justify-between items-center">
+      <h1 class="text-xl font-bold">Pulse AI Assistant</h1>
+    </div>
+
+    <!-- Chat -->
+    <div id="chatbox"
+         class="flex-1 p-6 overflow-y-auto bg-gray-50"></div>
+
+    <!-- Input -->
+    <div class="p-4 border-t flex gap-3">
+      <input
+        id="userInput"
+        type="text"
+        placeholder="Tell me about your symptoms..."
+        class="flex-1 px-4 py-3 rounded-xl bg-gray-100 outline-none"
+      />
+      <button
+        id="sendBtn"
+        class="bg-blue-500 text-white px-4 rounded-xl">
+        Send
+      </button>
+    </div>
+  </div>
+
+<script>
+const chatbox = document.getElementById("chatbox");
+const userInput = document.getElementById("userInput");
+const sendBtn = document.getElementById("sendBtn");
+
+function addMessage(sender, text) {
+  const wrapper = document.createElement("div");
+  wrapper.className = `flex mb-3 ${sender === "user" ? "justify-end" : "justify-start"}`;
+
+  const bubble = document.createElement("div");
+  bubble.className =
+    sender === "user"
+      ? "bg-blue-500 text-white px-4 py-2 rounded-xl max-w-xs"
+      : "bg-white border px-4 py-2 rounded-xl max-w-xs";
+
+  bubble.innerHTML = text;
+  wrapper.appendChild(bubble);
+  chatbox.appendChild(wrapper);
+  chatbox.scrollTop = chatbox.scrollHeight;
+}
+
+function showLoading() {
+  const el = document.createElement("div");
+  el.id = "loading";
+  el.className = "flex mb-3";
+  el.innerHTML = `<div class="dot-flashing"></div>`;
+  chatbox.appendChild(el);
+  chatbox.scrollTop = chatbox.scrollHeight;
+}
+
+function removeLoading() {
+  const el = document.getElementById("loading");
+  if (el) el.remove();
+}
+
+async function getBotReply(userText) {
+  try {
+    const response = await fetch("http://localhost:5000/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: userText })
+    });
+
+    if (!response.ok) throw new Error("Backend error");
+
+    const data = await response.json();
+    return data.reply;
+
+  } catch (err) {
+    console.error("Backend error:", err);
+    return "I'm having trouble connecting to the server.";
+  }
+}
+
+async function handleUserMessage() {
+  const text = userInput.value.trim();
+  if (!text) return;
+
+  addMessage("user", text);
+  userInput.value = "";
+  sendBtn.disabled = true;
+
+  showLoading();
+
+  const reply = await getBotReply(text);
+
+  removeLoading();
+  addMessage("bot", reply);
+
+  sendBtn.disabled = false;
+}
+
+sendBtn.addEventListener("click", handleUserMessage);
+userInput.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") handleUserMessage();
+});
+
+// welcome message
+setTimeout(() => {
+  addMessage(
+    "bot",
+    "Hello! I'm <b>Pulse</b>, your AI health assistant. Describe your symptoms."
+  );
+}, 400);
+</script>
+
+</body>
+</html>
